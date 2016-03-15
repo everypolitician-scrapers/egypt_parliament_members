@@ -49,20 +49,17 @@ def scrape_page(page, url, agent)
 
 end
 
+def date_of_birth(str)
+  matched = str.match(/(\d+)\/(\d+)\/(\d+)/) or return
+  year, month, day = matched.captures
+  "%d-%02d-%02d" % [ year, month, day ]
+end
+
 def scrape_person(row, url, page, agent)
     cells = row.css('td')
     if cells.size != 7
         return
     end
-    name = cells[3].text.tidy
-
-    data = {
-        id: cells[1].text,
-        name: name,
-        photo: cells[5].css('img/@src').text,
-        source: url,
-    }
-    data[:photo] = URI.join(url, data[:photo]).to_s unless data[:photo].to_s.empty?
 
     target, arg = cells[0].css('a/@href').to_s.match("'([^']*)',\s*'([^']*)'").captures
 
@@ -72,29 +69,19 @@ def scrape_person(row, url, page, agent)
     form.add_field!('__EVENTARGUMENT', arg)
     extra_details = agent.submit(form)
 
-    data = get_extra_details(data, extra_details)
+    data = {
+        id: cells[1].text,
+        name: cells[3].text.tidy,
+        photo: cells[5].css('img/@src').text,
+        source: url,
+        date_of_birth: date_of_birth(extra_details.css('span#ctl00_MainContent_Label13').text),
+        party: extra_details.css('span#ctl00_MainContent_Label26').text.tidy,
+        cons: extra_details.css('span#ctl00_MainContent_Label24').text.tidy,
+    }
+    data[:photo] = URI.join(url, data[:photo]).to_s unless data[:photo].to_s.empty?
 
     #puts "%s - %s\n" % [ data[:name], data[:id] ]
     ScraperWiki.save_sqlite([:id], data)
-end
-
-def date_of_birth(str)
-  matched = str.match(/(\d+)\/(\d+)\/(\d+)/) or return
-  year, month, day = matched.captures
-  "%d-%02d-%02d" % [ year, month, day ]
-end
-
-
-def get_extra_details(data, page)
-    date_of_birth = date_of_birth(page.css('span#ctl00_MainContent_Label13').text)
-    party = page.css('span#ctl00_MainContent_Label26').text.tidy
-    cons = page.css('span#ctl00_MainContent_Label24').text.tidy
-
-    data[:party] = party
-    data[:dob] = date_of_birth
-    data[:constituency] = cons
-
-    return data
 end
 
 url = 'http://www.parliament.gov.eg/members/'
