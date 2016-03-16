@@ -2,10 +2,26 @@
 # encoding: utf-8
 
 require 'scraperwiki'
-require 'nokogiri'
-require 'open-uri/cached'
-require 'pry'
-require 'mechanize'
+require 'capybara'
+require 'capybara/dsl'
+require 'capybara/poltergeist'
+
+Capybara.default_max_wait_time = 5
+
+# images are very slow to load and cause timeouts and
+# as we don't need them skip
+options = {
+    timeout: 60,
+    phantomjs_options: ['--load-images=no']
+}
+
+Capybara.register_driver :poltergeist do |app|
+  Capybara::Poltergeist::Driver.new(app, options)
+end
+
+include Capybara::DSL
+Capybara.default_driver = :poltergeist
+
 
 class String
   def tidy
@@ -18,70 +34,68 @@ def noko_for(url)
 end
 
 def scrape_list(url, count)
-  agent = Mechanize.new
-  fetched = agent.get(url)
+  visit(url)
 
-  form = fetched.form('aspnetForm')
-  form.field_with(:id => 'ctl00_MainContent_DropDownList1').value = 0
-  page = agent.submit(form, form.buttons[1])
-  scrape_next_page(agent, page, count, url)
+  find(:id, 'ctl00_MainContent_Button4').click
+  scrape_next_page(count, url)
 end
 
-def scrape_next_page(agent, page, count, url)
-  scrape_page(page, url, agent)
+def scrape_next_page(count, url)
+  scrape_page(url)
+
+  visit(url)
+  find(:id, 'ctl00_MainContent_Button4').click
   count = count + 1
-  count_link = page.xpath("//a[contains(.,'" + count.to_s + "')]")
-  unless count_link[0].nil?
-    form = page.form('aspnetForm')
-    # this fakes the on page JS
-    form.add_field!('__EVENTTARGET', 'ctl00$MainContent$GridView1')
-    form.add_field!('__EVENTARGUMENT', 'Page$' + count.to_s)
-    page = agent.submit(form)
-
-    scrape_next_page(agent, page, count, url)
+  count_link = "//a[contains(.,'" + count.to_s + "')]"
+  while page.has_xpath?(count_link)
+    find(:xpath, count_link).click
+    scrape_next_page(count, url)
   end
 end
 
-def scrape_page(page, url, agent)
-  page.css('table#ctl00_MainContent_GridView1 tr').each do |row|
-    scrape_person(row, url, page, agent)
+def scrape_page(url)
+  count = 0
+  rows = all('table#ctl00_MainContent_GridView1 tr')
+  while not rows[count].nil?
+    scrape_person(rows[count], url)
+    count = count + 1
+    rows = all('table#ctl00_MainContent_GridView1 tr')
   end
-
 end
 
 def date_of_birth(str)
   matched = str.match(/(\d+)\/(\d+)\/(\d+)/) or return
   year, month, day = matched.captures
-  "%d-%02d-%02d" % [ year, month, day ]
+  "%d-%02d-%02d" % [ year, month.to_i, day.to_i ]
 end
 
-def scrape_person(row, url, page, agent)
-    cells = row.css('td')
+def scrape_person(row, url)
+    if not row.has_css?('td')
+        return
+    end
+
+    cells = row.all(:css, 'td')
     if cells.size != 7
         return
     end
 
-    target, arg = cells[0].css('a/@href').to_s.match("'([^']*)',\s*'([^']*)'").captures
-
-    form = page.form('aspnetForm')
-    # this fakes the on page JS
-    form.add_field!('__EVENTTARGET', target)
-    form.add_field!('__EVENTARGUMENT', arg)
-    extra_details = agent.submit(form)
-
     data = {
         id: cells[1].text,
         name: cells[3].text.tidy,
-        photo: cells[5].css('img/@src').text,
+        photo: cells[5].find('img')[:src],
         source: url,
-        date_of_birth: date_of_birth(extra_details.css('span#ctl00_MainContent_Label13').text),
-        party: extra_details.css('span#ctl00_MainContent_Label26').text.tidy,
-        cons: extra_details.css('span#ctl00_MainContent_Label24').text.tidy,
     }
-    data[:photo] = URI.join(url, data[:photo]).to_s unless data[:photo].to_s.empty?
 
-    #puts "%s - %s\n" % [ data[:name], data[:id] ]
+    cells[0].find('a').click
+
+    dob = page.find('#ctl00_MainContent_Label13').text
+    data[:date_of_birth] = date_of_birth(dob)
+    data[:party] = page.find('span#ctl00_MainContent_Label26').text.tidy
+    data[:cons] = page.find('span#ctl00_MainContent_Label24').text.tidy
+
+    #puts "%s - %s" % [ data[:name], data[:id] ]
     ScraperWiki.save_sqlite([:id], data)
+    go_back
 end
 
 url = 'http://www.parliament.gov.eg/members/'
