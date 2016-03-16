@@ -88,10 +88,9 @@ def scrape_person(row, url)
 
     cells[0].find('a').click
 
-    dob = page.find('#ctl00_MainContent_Label13').text
-    data[:date_of_birth] = date_of_birth(dob)
-    data[:party] = page.find('span#ctl00_MainContent_Label26').text.tidy
-    data[:cons] = page.find('span#ctl00_MainContent_Label24').text.tidy
+    data[:date_of_birth] = date_of_birth(page.find('#ctl00_MainContent_Label13').text) rescue ""
+    data[:party] = page.find('span#ctl00_MainContent_Label26').text.tidy rescue ""
+    data[:cons] = page.find('span#ctl00_MainContent_Label24').text.tidy rescue ""
 
     #puts "%s - %s" % [ data[:name], data[:id] ]
     ScraperWiki.save_sqlite([:id], data)
