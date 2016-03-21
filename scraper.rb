@@ -29,10 +29,6 @@ class String
   end
 end
 
-def noko_for(url)
-  Nokogiri::HTML(open(url).read)
-end
-
 def scrape_list(url, count)
   visit(url)
 
@@ -86,7 +82,14 @@ def scrape_person(row, url)
         source: url,
     }
 
-    cells[0].find('a').click
+    # this seems to timeout quite often so just skip over it in
+    # the hope that we gather everything over time
+    begin
+        cells[0].find('a').click
+    rescue
+        puts "failed to get extra data for %s, skipping" % [ data[:id] ]
+        return
+    end
 
     data[:date_of_birth] = date_of_birth(page.find('#ctl00_MainContent_Label13').text) rescue ""
     data[:party] = page.find('span#ctl00_MainContent_Label26').text.tidy rescue ""
