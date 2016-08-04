@@ -1,0 +1,10 @@
+---
+request:
+  method: get
+  uri: http://www.parliament.gov.eg/members/
+response:
+  status:
+    message: OK
+    code: 200
+  date:
+  - Thu, 04 Aug 2016 13:34:41 GMT
