@@ -2,9 +2,11 @@
 # encoding: utf-8
 
 require 'scraperwiki'
+require 'scraped_page_archive'
 require 'capybara'
 require 'capybara/dsl'
 require 'capybara/poltergeist'
+require 'scraped_page_archive/capybara'
 
 Capybara.default_max_wait_time = 5
 

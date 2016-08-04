@@ -13,3 +13,4 @@ gem "colorize"
 gem "nokogiri"
 gem 'capybara'
 gem 'poltergeist'
+gem 'scraped_page_archive', git: "https://github.com/everypolitician/scraped_page_archive", branch: "capybara-support"
