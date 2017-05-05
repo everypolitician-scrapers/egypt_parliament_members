@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/everypolitician/scraped_page_archive
-  revision: 1c70a7cd9f38816d02978febf69205600d93366a
+  revision: 450f989f1469f06caca1a886a13da8a4b78e52ea
   branch: capybara-support
   specs:
     scraped_page_archive (0.4.0)
@@ -19,7 +19,8 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.4.0)
+    addressable (2.5.1)
+      public_suffix (~> 2.0, >= 2.0.2)
     capybara (2.6.2)
       addressable
       mime-types (>= 1.16)
@@ -33,7 +34,7 @@ GEM
     crack (0.4.3)
       safe_yaml (~> 1.0.0)
     git (1.3.0)
-    hashdiff (0.3.0)
+    hashdiff (0.3.4)
     httpclient (2.7.1)
     method_source (0.8.2)
     mime-types (3.0)
@@ -53,6 +54,7 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
+    public_suffix (2.0.5)
     rack (1.6.4)
     rack-test (0.6.3)
       rack (>= 1.0)
@@ -88,5 +90,8 @@ DEPENDENCIES
   scraped_page_archive!
   scraperwiki!
 
+RUBY VERSION
+   ruby 2.0.0p648
+
 BUNDLED WITH
-   1.10.6
+   1.14.6
