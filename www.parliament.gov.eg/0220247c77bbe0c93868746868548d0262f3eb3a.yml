@@ -1,0 +1,10 @@
+---
+request:
+  method: get
+  uri: http://www.parliament.gov.eg/members/MEM_DETAIL.aspx
+response:
+  status:
+    message: NOT OK
+    code: 302
+  date:
+  - Sat, 06 May 2017 00:53:10 GMT
